@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="description" content="Portfolio template inspired by ThevertMenthe." />
+    <title>Artist Portfolio Template</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="loader" id="loader">
+      <span><h1 class="loader_title">YourArtistName</h1></span>
+      <div class="loader_line"><span id="loaderFill"></span></div>
+      <span>
+        <div class="loader_sub">
+          <div class="loader_number" id="loaderNumber">0</div>
+          <div class="loader_subtitle">drawings</div>
+        </div>
+      </span>
+    </div>
+
+    <div class="menu" id="menu">
+      <div class="menu_canvas_container">
+        <img class="menu_image" src="https://images.unsplash.com/photo-1473448912268-2022ce9509d8?q=80&w=1600&auto=format&fit=crop" alt="texture" />
+        <video class="menu_video" muted autoplay loop playsinline src="https://cdn.coverr.co/videos/coverr-black-ink-in-water-6518/1080p.mp4"></video>
+      </div>
+    </div>
+
+    <div class="menu_text" id="menuText">
+      <div class="search_bar">
+        <svg xmlns="http://www.w3.org/2000/svg" height="22" viewBox="0 -960 960 960" width="22" fill="#fff"><path d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z"/></svg>
+        <input id="searchInput" type="text" placeholder="Search an artwork" />
+      </div>
+
+      <div class="menu_main_links">
+        <span><a href="#">Home</a> ></span>
+        <span><a href="#">Gallery</a> ></span>
+      </div>
+
+      <div class="menu_line"></div>
+
+      <div class="menu_links">
+        <ul id="artworkList">
+          <li><a href="#">Silent Figure, 2026</a></li>
+          <li><a href="#">Studies in Blue Ink, 2025</a></li>
+          <li><a href="#">Paper Memory #12, 2024</a></li>
+          <li><a href="#">Night Pulse, 2023</a></li>
+          <li><a href="#">Archive of Faces, 2022</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <span class="menu_button menu_open" id="openMenu"><button>menu</button></span>
+    <span class="menu_button menu_close" id="closeMenu"><button>close</button></span>
+
+    <a href="mailto:hello@example.com" class="menu_contact">Contact me</a>
+    <a href="https://instagram.com" target="_blank" class="menu_insta">Instagram</a>
+
+    <div class="joystick_container">W/A/S/D or drag to move</div>
+
+    <main class="main">
+      <section class="hero">
+        <h2>Template Scene</h2>
+        <p>Drop your 3D / WebGL scene in the canvas and keep this UI shell.</p>
+      </section>
+    </main>
+
+    <canvas class="webgl" id="webgl"></canvas>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
