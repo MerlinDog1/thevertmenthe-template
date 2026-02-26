@@ -56,32 +56,38 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x090909, 8, 42);
+scene.fog = new THREE.Fog(0xe9d9bf, 14, 58);
 
 const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 120);
 camera.position.set(0, 4, 8);
 
-// Lighting
-scene.add(new THREE.HemisphereLight(0xffffff, 0x141414, 0.45));
-const spot = new THREE.SpotLight(0xffffff, 1.6, 60, Math.PI * 0.24, 0.5, 1.4);
-spot.position.set(0, 9, 0);
+// Lighting (warm hotel-lobby ambience)
+scene.add(new THREE.HemisphereLight(0xfff4df, 0xd5b894, 0.95));
+const spot = new THREE.SpotLight(0xffe2b4, 2.4, 72, Math.PI * 0.3, 0.45, 1.1);
+spot.position.set(0, 10, 0);
 spot.target.position.set(0, 0, -10);
 spot.castShadow = false;
 scene.add(spot, spot.target);
 
-const rim = new THREE.PointLight(0xb7c5ff, 0.55, 30);
-rim.position.set(-8, 2, -8);
+const rim = new THREE.PointLight(0xffdca8, 0.9, 42);
+rim.position.set(-8, 3, -8);
 scene.add(rim);
+
+const chandelierA = new THREE.PointLight(0xffd28a, 1.2, 30);
+chandelierA.position.set(-4.5, 5.2, -1.5);
+const chandelierB = new THREE.PointLight(0xffd28a, 1.2, 30);
+chandelierB.position.set(4.5, 5.2, 1.5);
+scene.add(chandelierA, chandelierB);
 
 // Gallery room
 const floor = new THREE.Mesh(
   new THREE.PlaneGeometry(26, 34),
-  new THREE.MeshStandardMaterial({ color: 0x121212, roughness: 0.95, metalness: 0.02 })
+  new THREE.MeshStandardMaterial({ color: 0xdcc3a0, roughness: 0.52, metalness: 0.08 })
 );
 floor.rotation.x = -Math.PI / 2;
 scene.add(floor);
 
-const wallMat = new THREE.MeshStandardMaterial({ color: 0x1c1c1c, roughness: 0.92, metalness: 0.02 });
+const wallMat = new THREE.MeshStandardMaterial({ color: 0xf2e2cb, roughness: 0.85, metalness: 0.02 });
 const walls = [
   [0, 3, -17, 26, 6, 0.4, 0],
   [0, 3, 17, 26, 6, 0.4, 0],
@@ -96,7 +102,7 @@ for (const [x, y, z, w, h, d] of walls) {
 
 const ceiling = new THREE.Mesh(
   new THREE.PlaneGeometry(26, 34),
-  new THREE.MeshStandardMaterial({ color: 0x101010, roughness: 0.9 })
+  new THREE.MeshStandardMaterial({ color: 0xf8eddc, roughness: 0.82 })
 );
 ceiling.position.y = 6;
 ceiling.rotation.x = Math.PI / 2;
@@ -122,7 +128,7 @@ for (const f of frameData) {
 
   const frame = new THREE.Mesh(
     new THREE.BoxGeometry(2.55, 1.7, 0.1),
-    new THREE.MeshStandardMaterial({ color: 0xb09045, roughness: 0.4, metalness: 0.45 })
+    new THREE.MeshStandardMaterial({ color: 0xc79c47, roughness: 0.3, metalness: 0.62 })
   );
 
   const c = new THREE.Color(`hsl(${f.hue} 60% 52%)`);
@@ -142,7 +148,7 @@ for (const f of frameData) {
 // Silhouette walker
 const walker = new THREE.Group();
 
-const silhouetteMat = new THREE.MeshStandardMaterial({ color: 0x040404, roughness: 1, metalness: 0 });
+const silhouetteMat = new THREE.MeshStandardMaterial({ color: 0x17120f, roughness: 1, metalness: 0 });
 const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.35, 0.9, 8, 12), silhouetteMat);
 body.position.y = 1.2;
 const head = new THREE.Mesh(new THREE.SphereGeometry(0.26, 18, 18), silhouetteMat);
@@ -160,7 +166,7 @@ armR.rotation.z = -0.25;
 
 const shadow = new THREE.Mesh(
   new THREE.CircleGeometry(0.42, 28),
-  new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.34 })
+  new THREE.MeshBasicMaterial({ color: 0x2a1b10, transparent: true, opacity: 0.22 })
 );
 shadow.rotation.x = -Math.PI / 2;
 shadow.position.y = 0.03;
