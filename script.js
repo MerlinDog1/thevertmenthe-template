@@ -38,7 +38,9 @@ closeMenu.addEventListener('click', () => setMenuState(false));
 
 window.addEventListener('keydown', (e) => {
   if (e.key.toLowerCase() === 'm') setMenuState(true);
+  if (e.key === 'Escape' && focusedIndex !== -1) exitFocusMode();
   if (e.key === 'Escape') setMenuState(false);
+  if (e.key === 'enter' && activeRingIndex !== -1) enterFocusMode(activeRingIndex);
 });
 
 searchInput.addEventListener('input', () => {
@@ -61,7 +63,7 @@ scene.fog = new THREE.Fog(0xe9d9bf, 14, 58);
 const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 120);
 camera.position.set(0, 4, 8);
 
-// Lighting (warm hotel-lobby ambience)
+// Lighting
 scene.add(new THREE.HemisphereLight(0xfff4df, 0xd5b894, 0.95));
 const spot = new THREE.SpotLight(0xffe2b4, 2.4, 72, Math.PI * 0.3, 0.45, 1.1);
 spot.position.set(0, 10, 0);
@@ -78,7 +80,7 @@ const chandelierB = new THREE.PointLight(0xffd28a, 1.2, 30);
 chandelierB.position.set(4.5, 5.2, 1.5);
 scene.add(chandelierA, chandelierB);
 
-// Gallery room
+// Room
 const floor = new THREE.Mesh(
   new THREE.PlaneGeometry(26, 34),
   new THREE.MeshStandardMaterial({ color: 0xdcc3a0, roughness: 0.52, metalness: 0.08 })
@@ -107,7 +109,6 @@ ceiling.position.y = 6;
 ceiling.rotation.x = Math.PI / 2;
 scene.add(ceiling);
 
-// Procedural "Nano Banana-style" artworks (stand-in textures for now)
 function makeArtworkTexture(seed, title) {
   const c = document.createElement('canvas');
   c.width = 640;
@@ -115,16 +116,12 @@ function makeArtworkTexture(seed, title) {
   const ctx = c.getContext('2d');
 
   const hue = (seed * 67) % 360;
-  const bgA = `hsl(${hue} 45% 87%)`;
-  const bgB = `hsl(${(hue + 30) % 360} 45% 80%)`;
-
   const g = ctx.createLinearGradient(0, 0, c.width, c.height);
-  g.addColorStop(0, bgA);
-  g.addColorStop(1, bgB);
+  g.addColorStop(0, `hsl(${hue} 45% 87%)`);
+  g.addColorStop(1, `hsl(${(hue + 30) % 360} 45% 80%)`);
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, c.width, c.height);
 
-  // organic brush strokes
   for (let i = 0; i < 30; i++) {
     ctx.strokeStyle = `hsla(${(hue + i * 7) % 360} 65% ${35 + (i % 5) * 8}% / ${0.12 + (i % 6) * 0.07})`;
     ctx.lineWidth = 2 + (i % 6) * 1.2;
@@ -135,17 +132,11 @@ function makeArtworkTexture(seed, title) {
     for (let k = 0; k < 4; k++) {
       x += (Math.random() - 0.5) * 220;
       y += (Math.random() - 0.5) * 140;
-      ctx.quadraticCurveTo(
-        x + (Math.random() - 0.5) * 80,
-        y + (Math.random() - 0.5) * 80,
-        x,
-        y
-      );
+      ctx.quadraticCurveTo(x + (Math.random() - 0.5) * 80, y + (Math.random() - 0.5) * 80, x, y);
     }
     ctx.stroke();
   }
 
-  // ink silhouette shape
   ctx.fillStyle = 'rgba(16, 12, 10, 0.9)';
   ctx.beginPath();
   ctx.moveTo(100, 350);
@@ -155,15 +146,6 @@ function makeArtworkTexture(seed, title) {
   ctx.lineTo(610, 365);
   ctx.closePath();
   ctx.fill();
-
-  // paper grain
-  for (let n = 0; n < 9000; n++) {
-    const x = Math.random() * c.width;
-    const y = Math.random() * c.height;
-    const a = Math.random() * 0.05;
-    ctx.fillStyle = `rgba(20,10,0,${a})`;
-    ctx.fillRect(x, y, 1, 1);
-  }
 
   ctx.fillStyle = 'rgba(0,0,0,.55)';
   ctx.font = '600 24px sans-serif';
@@ -176,8 +158,8 @@ function makeArtworkTexture(seed, title) {
 }
 
 const frameData = [
-  { x: -12.6, y: 2.3, z: -9, ry: Math.PI / 2, name: 'Ink Bloom I' },
-  { x: -12.6, y: 2.2, z: 0, ry: Math.PI / 2, name: 'Lobby Figure' },
+  { x: -12.6, y: 2.3, z: -9, ry: Math.PI / 2, name: 'Kiss Form' },
+  { x: -12.6, y: 2.2, z: 0, ry: Math.PI / 2, name: 'Bird Study' },
   { x: -12.6, y: 2.35, z: 9, ry: Math.PI / 2, name: 'Banana Geometry' },
   { x: 12.6, y: 2.3, z: -9, ry: -Math.PI / 2, name: 'Velvet Echo' },
   { x: 12.6, y: 2.2, z: 0, ry: -Math.PI / 2, name: 'Glass Noon' },
@@ -188,25 +170,40 @@ const frameData = [
   { x: 6, y: 2.3, z: 16.7, ry: Math.PI, name: 'Morning Tea' },
 ];
 
+const loaderTex = new THREE.TextureLoader();
+const uploadedTextures = [
+  loaderTex.load('./assets/artworks/art-01.jpg'),
+  loaderTex.load('./assets/artworks/art-02.jpg'),
+];
+uploadedTextures.forEach((t) => {
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+});
+
 const artMats = [];
+const rings = [];
+const focusPoints = [];
+
 for (let i = 0; i < frameData.length; i++) {
   const f = frameData[i];
   const group = new THREE.Group();
 
   const frame = new THREE.Mesh(
     new THREE.BoxGeometry(2.55, 1.7, 0.1),
-    new THREE.MeshStandardMaterial({ color: 0xc79c47, roughness: 0.3, metalness: 0.62 })
+    new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.34, metalness: 0.08 })
   );
 
+  const artMap = i < 2 ? uploadedTextures[i] : makeArtworkTexture(i + 1, f.name);
   const art = new THREE.Mesh(
     new THREE.PlaneGeometry(2.18, 1.33),
     new THREE.MeshStandardMaterial({
-      map: makeArtworkTexture(i + 1, f.name),
+      map: artMap,
       roughness: 0.86,
-      emissive: new THREE.Color(0x22170f),
-      emissiveIntensity: 0.05,
+      emissive: new THREE.Color(0x1e150f),
+      emissiveIntensity: 0.03,
     })
   );
+
   art.position.z = 0.06;
   artMats.push(art.material);
 
@@ -214,9 +211,27 @@ for (let i = 0; i < frameData.length; i++) {
   group.position.set(f.x, f.y, f.z);
   group.rotation.y = f.ry;
   scene.add(group);
+
+  const normal = new THREE.Vector3(Math.sin(f.ry), 0, Math.cos(f.ry)).normalize();
+  const standPos = new THREE.Vector3(f.x, 0.04, f.z).addScaledVector(normal, 1.6);
+
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(0.45, 0.018, 10, 42),
+    new THREE.MeshBasicMaterial({ color: 0x1f1f1f, transparent: true, opacity: 0.35 })
+  );
+  ring.rotation.x = Math.PI / 2;
+  ring.position.copy(standPos);
+  scene.add(ring);
+
+  rings.push(ring);
+  focusPoints.push({
+    standPos,
+    cameraPos: new THREE.Vector3(f.x, f.y, f.z).addScaledVector(normal, 2.15).add(new THREE.Vector3(0, 0.18, 0)),
+    lookAt: new THREE.Vector3(f.x, f.y + 0.02, f.z),
+  });
 }
 
-// More realistic human walker
+// Human walker
 const walker = new THREE.Group();
 const skinMat = new THREE.MeshStandardMaterial({ color: 0xd2a37c, roughness: 0.8 });
 const suitMat = new THREE.MeshStandardMaterial({ color: 0x2c2a30, roughness: 0.9 });
@@ -246,46 +261,36 @@ hips.add(hair);
 function makeLeg(side = 1) {
   const root = new THREE.Group();
   root.position.set(0.12 * side, 0.92, 0);
-
   const thigh = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.42, 5, 8), suitMat);
   thigh.position.y = -0.22;
   root.add(thigh);
-
   const knee = new THREE.Group();
   knee.position.y = -0.45;
   root.add(knee);
-
   const shin = new THREE.Mesh(new THREE.CapsuleGeometry(0.085, 0.4, 5, 8), suitMat);
   shin.position.y = -0.2;
   knee.add(shin);
-
   const foot = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 0.28), shoeMat);
   foot.position.set(0, -0.45, 0.08);
   knee.add(foot);
-
   return { root, knee };
 }
 
 function makeArm(side = 1) {
   const root = new THREE.Group();
   root.position.set(0.29 * side, 1.55, 0);
-
   const upper = new THREE.Mesh(new THREE.CapsuleGeometry(0.075, 0.28, 5, 8), suitMat);
   upper.position.y = -0.14;
   root.add(upper);
-
   const elbow = new THREE.Group();
   elbow.position.y = -0.3;
   root.add(elbow);
-
   const lower = new THREE.Mesh(new THREE.CapsuleGeometry(0.065, 0.26, 5, 8), suitMat);
   lower.position.y = -0.13;
   elbow.add(lower);
-
   const hand = new THREE.Mesh(new THREE.SphereGeometry(0.07, 14, 14), skinMat);
   hand.position.y = -0.29;
   elbow.add(hand);
-
   return { root, elbow };
 }
 
@@ -316,9 +321,30 @@ let stride = 0;
 const speed = { walk: 4.2, sprint: 6.6, turn: 2.35 };
 const room = { x: 11.2, z: 15.2 };
 
+let activeRingIndex = -1;
+let focusedIndex = -1;
+
+function enterFocusMode(index) {
+  focusedIndex = index;
+  const fp = focusPoints[index];
+  const toFrame = fp.lookAt.clone().sub(fp.cameraPos);
+  yaw = Math.atan2(toFrame.x, toFrame.z) + Math.PI;
+}
+
+function exitFocusMode() {
+  focusedIndex = -1;
+}
+
 const clock = new THREE.Clock();
 
 function updateMovement(dt) {
+  if (focusedIndex !== -1) {
+    const movingKey = keys.has('w') || keys.has('a') || keys.has('s') || keys.has('d') || keys.has('arrowup') || keys.has('arrowdown') || keys.has('arrowleft') || keys.has('arrowright');
+    if (movingKey) exitFocusMode();
+    velocity = THREE.MathUtils.damp(velocity, 0, 10, dt);
+    return;
+  }
+
   const forward = keys.has('w') || keys.has('arrowup');
   const backward = keys.has('s') || keys.has('arrowdown');
   const left = keys.has('a');
@@ -351,8 +377,30 @@ function updateMovement(dt) {
     if (right) targetYaw -= Math.PI / 2;
     walker.rotation.y = THREE.MathUtils.lerp(walker.rotation.y, targetYaw, 0.14);
   }
+}
 
-  const moving = Math.abs(velocity) > 0.2 || left || right;
+function updateRingsAndFocus() {
+  let best = -1;
+  let bestDist = Infinity;
+
+  for (let i = 0; i < rings.length; i++) {
+    const ring = rings[i];
+    const d = ring.position.distanceTo(new THREE.Vector3(walker.position.x, ring.position.y, walker.position.z));
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+
+  activeRingIndex = bestDist < 1.15 ? best : -1;
+
+  if (focusedIndex === -1 && bestDist < 0.45) {
+    enterFocusMode(best);
+  }
+}
+
+function updateAnimation(dt) {
+  const moving = Math.abs(velocity) > 0.2;
   stride += (moving ? 1 : 0) * dt * (keys.has('shift') ? 9.5 : 6.2);
   const swing = Math.sin(stride) * (moving ? 0.8 : 0.05);
 
@@ -360,7 +408,6 @@ function updateMovement(dt) {
   legR.root.rotation.x = swing * 0.7;
   legL.knee.rotation.x = Math.max(0, swing) * 0.65;
   legR.knee.rotation.x = Math.max(0, -swing) * 0.65;
-
   armL.root.rotation.x = swing * 0.5;
   armR.root.rotation.x = -swing * 0.5;
   armL.elbow.rotation.x = Math.max(0, -swing) * 0.35;
@@ -368,10 +415,17 @@ function updateMovement(dt) {
 
   hips.position.y = 0.03 + Math.abs(Math.sin(stride * 2)) * (moving ? 0.05 : 0.01);
   torso.rotation.z = Math.sin(stride * 0.5) * 0.05;
-  head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, (left ? 0.18 : right ? -0.18 : 0), 0.08);
+  head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, (keys.has('a') ? 0.18 : keys.has('d') ? -0.18 : 0), 0.08);
 }
 
 function updateCamera(dt) {
+  if (focusedIndex !== -1) {
+    const fp = focusPoints[focusedIndex];
+    camera.position.lerp(fp.cameraPos, 1 - Math.exp(-dt * 5.6));
+    camera.lookAt(fp.lookAt);
+    return;
+  }
+
   const offset = new THREE.Vector3(0, 2.9, 5.8).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw + Math.PI);
   const targetCam = walker.position.clone().add(offset);
   camera.position.lerp(targetCam, 1 - Math.exp(-dt * 5.4));
@@ -382,12 +436,28 @@ function updateCamera(dt) {
 
 function animate() {
   const dt = Math.min(clock.getDelta(), 0.033);
+  const t = clock.elapsedTime;
+
   updateMovement(dt);
+  updateRingsAndFocus();
+  updateAnimation(dt);
   updateCamera(dt);
 
-  const t = clock.elapsedTime;
+  rings.forEach((ring, i) => {
+    const mat = ring.material;
+    if (i === activeRingIndex || i === focusedIndex) {
+      mat.opacity = 0.75 + Math.sin(t * 5) * 0.12;
+      mat.color.setHex(0x111111);
+      ring.scale.setScalar(1 + Math.sin(t * 4) * 0.03);
+    } else {
+      mat.opacity = 0.28;
+      mat.color.setHex(0x2d2d2d);
+      ring.scale.setScalar(1);
+    }
+  });
+
   artMats.forEach((mat, i) => {
-    mat.emissiveIntensity = 0.04 + Math.sin(t * 1.1 + i * 0.9) * 0.015;
+    mat.emissiveIntensity = 0.03 + Math.sin(t * 1.1 + i * 0.9) * 0.015;
   });
 
   renderer.render(scene, camera);
